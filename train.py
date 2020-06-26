@@ -1,3 +1,4 @@
+import sys
 import torch
 import pickle
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler, TensorDataset)
@@ -31,14 +32,14 @@ MAX_SEQ_LENGTH = 128
 TRAIN_BATCH_SIZE = 24
 EVAL_BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
-NUM_TRAIN_EPOCHS = 2 
+NUM_TRAIN_EPOCHS = int(sys.argv[1])
 RANDOM_SEED = 42
 GRADIENT_ACCUMULATION_STEPS = 1
 WARMUP_PROPORTION = 0.1
 OUTPUT_MODE = 'classification'
 
-CONFIG_NAME = "config.json"
-WEIGHTS_NAME = "pytorch_model.bin"
+CONFIG_NAME = "config.json" #.json
+WEIGHTS_NAME = "pytorch_model.bin" #.bin
 
 output_mode = OUTPUT_MODE
 cache_dir = CACHE_DIR
@@ -54,6 +55,8 @@ if os.path.exists(OUTPUT_DIR) and os.listdir(OUTPUT_DIR):
 	raise ValueError("Output directory ({}) already exists and is not empty.".format(OUTPUT_DIR))
 if not os.path.exists(OUTPUT_DIR):
 	os.makedirs(OUTPUT_DIR)
+
+flog = open(OUTPUT_DIR+"/trainingLog.txt",'w')
 
 processor = BinaryClassificationProcessor()
 train_examples = processor.get_train_examples(DATA_DIR)
@@ -77,7 +80,8 @@ if __name__=="__main__":
 with open(DATA_DIR +"train_features.pkl","wb") as f:
 	pickle.dump(train_features,f)
 
-model = BertForSequenceClassification.from_pretrained(BERT_MODEL, cache_dir = CACHE_DIR, num_labels = num_labels)
+#model = BertForSequenceClassification.from_pretrained(BERT_MODEL, cache_dir = CACHE_DIR, num_labels = num_labels)
+model = BertModel.from_pretrained(BERT_MODEL, cache_dir = CACHE_DIR)
 model.to(device)
 
 param_optimizer = list(model.named_parameters())
@@ -111,14 +115,21 @@ train_sampler = RandomSampler(train_data)
 train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=TRAIN_BATCH_SIZE)
 
 model.train()
-for _ in trange(int(NUM_TRAIN_EPOCHS), desc="Epoch"):
+for i in trange(int(NUM_TRAIN_EPOCHS), desc="Epoch"):
 	tr_loss =0 
 	nb_tr_examples, nb_tr_steps =0,0
 	for step, batch in enumerate(tqdm_notebook(train_dataloader, desc="Iteration")):
 		batch = tuple(t.to(device) for t in batch)
 		input_ids, input_mask, segment_ids, label_ids = batch
 
-		logits = model(input_ids, segment_ids, input_mask, labels=None)
+		model_output = model(input_ids, segment_ids, input_mask)[0]
+		sequence_output = model_output[0]
+		clsEmbed = sequence_output[:,0,:].squeeze()
+		print(sequence_output.size())
+		print(clsEmbed.size())
+		exit()
+
+		# from now, need to modify
 
 		if OUTPUT_MODE == "classification":
 			loss_fct = CrossEntropyLoss()
@@ -140,12 +151,19 @@ for _ in trange(int(NUM_TRAIN_EPOCHS), desc="Epoch"):
 			optimizer.step()
 			optimizer.zero_grad()
 			global_step += 1
+	trainLoss = tr_loss/train_examples_len
+	print(trainLoss)
+	flog.write(str(i)+"th epoch training loss\t"+str(trainLoss)+"\n")
 	
-model_to_save = model.module if hasattr(model, 'module') else model
+	model_to_save = model.module if hasattr(model, 'module') else model
 
-output_model_file = os.path.join(OUTPUT_DIR, WEIGHTS_NAME)
-output_config_file = os.path.join(OUTPUT_DIR, CONFIG_NAME)
+	epochDir = OUTPUT_DIR+"/"+str(i)+"epoch"
+	if not os.path.exists(epochDir):
+		os.makedirs(epochDir)
 
-torch.save(model_to_save.state_dict(), output_model_file)
-model_to_save.config.to_json_file(output_config_file)
-tokenizer.save_vocabulary(OUTPUT_DIR)
+	output_model_file = os.path.join(epochDir, WEIGHTS_NAME)
+	output_config_file = os.path.join(epochDir, CONFIG_NAME)
+
+	torch.save(model_to_save.state_dict(), output_model_file)
+	model_to_save.config.to_json_file(output_config_file)
+	tokenizer.save_vocabulary(epochDir)

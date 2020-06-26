@@ -138,8 +138,10 @@ dmypy.json
 
 # data folder
 BERT_binary_text_classification/
+cnn-text-classification-pytorch/
 cache/
 outputs/
+outputs*/
 data/
 temp/
 reports/
