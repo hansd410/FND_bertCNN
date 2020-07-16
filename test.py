@@ -8,9 +8,9 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler, Tens
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn import CrossEntropyLoss, MSELoss
 
-from tools import *
+from lib.tools import *
 from multiprocessing import Pool, cpu_count
-import convert_examples_to_features
+import lib.convert_examples_to_features as convert_examples_to_features
 
 from tqdm import tqdm_notebook, trange
 import os
@@ -34,8 +34,8 @@ CACHE_DIR = 'cache/'
 
 MAX_SEQ_LENGTH = 128
 
-TRAIN_BATCH_SIZE = 24
-EVAL_BATCH_SIZE = 8
+TRAIN_BATCH_SIZE = 30
+EVAL_BATCH_SIZE = 30
 LEARNING_RATE = 2e-5
 NUM_TRAIN_EPOCHS = 1 
 RANDOM_SEED = 42
@@ -46,12 +46,11 @@ OUTPUT_MODE = 'classification'
 CONFIG_NAME = "config.json"
 WEIGHTS_NAME = "pytorch_model.bin"
 
-if os.path.exists(REPORTS_DIR) and os.listdir(REPORTS_DIR):
-	REPORTS_DIR += f'/report_{len(os.listdir(REPORTS_DIR))}'
-	os.makedirs(REPORTS_DIR)
 if not os.path.exists(REPORTS_DIR):
 	os.makedirs(REPORTS_DIR)
-	REPORTS_DIR += f'/report_{len(os.listdir(REPORTS_DIR))}'
+
+if os.path.exists(REPORTS_DIR) :
+	REPORTS_DIR += f'report_{len(os.listdir(REPORTS_DIR))}'
 	os.makedirs(REPORTS_DIR)
 
 def get_eval_report(task_name,labels,preds):

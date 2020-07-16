@@ -145,5 +145,6 @@ outputs*/
 data/
 temp/
 reports/
+results/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
