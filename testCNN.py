@@ -38,8 +38,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ################################ CNN PART ####################################
 
 embedSize = 10000
-embedDim = 50 
-maxLen = 200
+embedDim = 300
+maxLen = 300
 
 parser = argparse.ArgumentParser(description='CNN text classifier')
 parser.add_argument('-epoch-num',type=int,default=10,help='training epoch [default : 10]')

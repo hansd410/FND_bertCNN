@@ -1,6 +1,6 @@
-#rm -r outputs
+rm -r outputs
 
-#python train.py 10
+python train.py 10
 
 for i in $(seq 0 9)
 do
@@ -11,7 +11,7 @@ do
 	python test.py
 done
 
-mkdir results/experimentV6
-mv reports/fakeNews_evaluation_report/* results/experimentV6/
+mkdir results/experimentV7
+mv reports/fakeNews_evaluation_report/* results/experimentV7/
 
 
