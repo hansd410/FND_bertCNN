@@ -58,7 +58,7 @@ def compute_metrics(task_name,labels,preds):
 parser = argparse.ArgumentParser(description='CNN text classifier')
 # GENERAL
 parser.add_argument('-task-name',type=str,default='fakeNews', help='task name [default : fakeNews]')
-parser.add_argument('-data-dir',type=str,default='data', help='data dir [default : data]')
+parser.add_argument('-data-dir',type=str,default='data/train.tsv', help='data dir [default : data/train.tsv]')
 parser.add_argument('-output-dir',type=str,default='outputs/fakeNews', help='output dir [default : outputs/fakeNews]')
 parser.add_argument('-reports-dir',type=str,default='reports/fakeNews_evaluation_report', help='reports dir [default : reports/fakeNews_evaluation_report]')
 parser.add_argument('-cache-dir',type=str,default='cache', help='cache dir [default : cache]')
@@ -68,6 +68,7 @@ parser.add_argument('-batch-size',type=int,default=30, help='batch size [default
 parser.add_argument('-lr',type=float,default=2e-5, help='learning rate [default : 2e-5]')
 parser.add_argument('-train-epoch',type=int,default=300, help='maximum evidence length [default : 300]')
 # CNN
+parser.add_argument('-cnn',type=bool,default=True, help='cnn on off [default : True]')
 parser.add_argument('-cnn-max-len',type=int,default=300, help='maximum evidence length [default : 300]')
 parser.add_argument('-embed-dim',type=int,default=300, help='embed dim for evidence [default : 300]')
 parser.add_argument('-kernel-num',type=int,default =100,help='number of each kind of kernel')
@@ -82,7 +83,7 @@ parser.add_argument('-weights-name',type=str,default='pytorch_model.bin', help='
 parser.add_argument('-config-name',type=str,default='config.json', help='bert config name [default : config.json]')
 
 args = parser.parse_args()
-
+argsDict = vars(args)
 
 ################################ GENERAL ####################################
 
@@ -100,7 +101,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 args.kernel_sizes = [int(k) for k in args.kernel_sizes.split(',')]
 
-dataReader = csvReader(args.data_dir+'/'+args.mode+'.tsv')
+dataReader = csvReader(args.data_dir)
 
 contextList = dataReader.getContextList()
 wordEmbedding = Embedding(args.embed_dim)
@@ -112,8 +113,10 @@ cnnModel = CNN_Text(args)
 cnnOutputDim = len(args.kernel_sizes)*args.kernel_num
 
 # bert hidden dim : 768, class label : 2
-fcLayer = nn.Linear(cnnOutputDim+768,2)
-
+if(args.cnn):
+	fcLayer = nn.Linear(cnnOutputDim+768,2)
+else:
+	fcLayer = nn.Linear(768,2)
 
 ###################### BERT PART ########################
 # MODEL
@@ -151,7 +154,7 @@ fcLayer.to(device)
 # READ DATA
 processor = BinaryClassificationProcessor()
 
-examples = processor.get_data_examples(os.path.join(args.data_dir,args.mode+'.tsv'))
+examples = processor.get_data_examples(args.data_dir)
 examples_len = len(examples)
 
 label_list = processor.get_labels()
@@ -204,8 +207,11 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 
 		outputBERT = modelBERT(input_ids, segment_ids, input_mask)
 		lastLayerCLS = outputBERT[0][:,0,:].squeeze()
-		cnnOutput = cnnModel(inputCNN)
-		logits = fcLayer(torch.cat((lastLayerCLS,cnnOutput),1))
+		if(args.cnn):
+			cnnOutput = cnnModel(inputCNN)
+			logits = fcLayer(torch.cat((lastLayerCLS,cnnOutput),1))
+		else:
+			logits = fcLayer(lastLayerCLS)
 		
 		loss_fct = CrossEntropyLoss()
 		loss = loss_fct(logits.view(-1, num_labels), label_ids.view(-1))
@@ -227,6 +233,10 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 		epochDir = args.output_dir+"/"+str(i)+"epoch"
 		if not os.path.exists(epochDir):
 			os.makedirs(epochDir)
+
+		flog = open(epochDir+'_log.txt','w')
+		for key in argsDict.keys():
+			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
 
 		model_to_save = modelBERT.module if hasattr(modelBERT, 'module') else modelBERT
 
@@ -250,15 +260,15 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 	if(args.mode == 'test' or args.mode =='dev'):
 		resultDir = args.reports_dir
 
-	# PRINT RESULT
-	preds = preds[0]
-	preds = np.argmax(preds, axis = 1)
-	result = compute_metrics(args.task_name,all_label_ids.numpy(),preds)
-	result['totalLoss'] = totalLoss
-	output_file = os.path.join(resultDir, args.mode+"_results.txt")
-	with open(output_file,'w') as writer:
-		logger.info("**** "+args.mode+" RESULTS ****")
-		for key in (result.keys()):
-			logger.info(" %s=%s", key, str(result[key]))
-			writer.write("%s=%s\n" % (key, str(result[key])))
+		# PRINT RESULT
+		preds = preds[0]
+		preds = np.argmax(preds, axis = 1)
+		result = compute_metrics(args.task_name,all_label_ids.numpy(),preds)
+		result['totalLoss'] = totalLoss
+		output_file = os.path.join(resultDir, args.mode+"_results.txt")
+		with open(output_file,'w') as writer:
+			logger.info("**** "+args.mode+" RESULTS ****")
+			for key in (result.keys()):
+				logger.info(" %s=%s", key, str(result[key]))
+				writer.write("%s=%s\n" % (key, str(result[key])))
 
