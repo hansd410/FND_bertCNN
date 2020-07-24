@@ -45,7 +45,7 @@ parser = argparse.ArgumentParser(description='CNN text classifier')
 parser.add_argument('-epoch-num',type=int,default=10,help='training epoch [default : 10]')
 parser.add_argument('-kernel-num',type=int,default =100,help='number of each kind of kernel')
 parser.add_argument('-kernel-sizes',type=str,default='3,4,5', help='comma-separated kernel size to use for convolution')
-parser.add_argument('-dropout',type=float,default=0.5, help='the probability for dropout [default : 0.5]')
+parser.add_argument('-cnn-dropout',type=float,default=0.1, help='the probability for dropout [default : 0.1]')
 
 args = parser.parse_args()
 args.kernel_sizes = [int(k) for k in args.kernel_sizes.split(',')]
@@ -53,8 +53,9 @@ args.class_num = 2
 args.embed_num = maxLen
 args.embed_dim = embedDim
 
+trainReader = csvReader('data/train.csv')
 devReader = csvReader('data/dev.csv')
-devContextList = devReader.getContextList()
+devContextList = trainReader.getContextList()
 
 wordEmbedding = Embedding(embedDim)
 allInputCNN = wordEmbedding.getEmbedTensor(devContextList,200)
@@ -66,7 +67,6 @@ bertHiddenDim = 768
 cnnOutputDim = len(args.kernel_sizes)*args.kernel_num
 
 fcLayer = nn.Linear(bertHiddenDim+cnnOutputDim,args.class_num)
-
 
 ###################### BERT PART ########################
 
@@ -122,7 +122,7 @@ def compute_metrics(task_name,labels,preds):
 tokenizer = BertTokenizer.from_pretrained(OUTPUT_DIR+'vocab.txt',do_lower_case=False)
 
 processor = BinaryClassificationProcessor()
-eval_examples = processor.get_dev_examples(DATA_DIR)
+eval_examples = processor.get_train_examples(DATA_DIR)
 label_list = processor.get_labels()
 num_labels = len(label_list)
 eval_examples_len = len(eval_examples)

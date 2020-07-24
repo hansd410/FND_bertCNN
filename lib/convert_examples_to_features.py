@@ -27,7 +27,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
 
 def convert_example_to_feature(example_row):
     # return example_row
-    example, label_map, max_seq_length, tokenizer, output_mode = example_row
+    example, label_map, max_seq_length, tokenizer = example_row
 
     tokens_a = tokenizer.tokenize(example.text_a)
 
@@ -66,12 +66,7 @@ def convert_example_to_feature(example_row):
     assert len(input_mask) == max_seq_length
     assert len(segment_ids) == max_seq_length
 
-    if output_mode == "classification":
-        label_id = label_map[example.label]
-    elif output_mode == "regression":
-        label_id = float(example.label)
-    else:
-        raise KeyError(output_mode)
+    label_id = label_map[example.label]
 
     return InputFeatures(input_ids=input_ids,
                          input_mask=input_mask,

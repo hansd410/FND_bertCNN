@@ -8,7 +8,7 @@ from torch.nn import CrossEntropyLoss, MSELoss
 
 from tqdm import tqdm_notebook, trange
 import os
-from transformers import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, AdamW
+from transformers import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, AdamW, BertConfig
 #from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification
 #from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
 
@@ -47,7 +47,8 @@ parser = argparse.ArgumentParser(description='CNN text classifier')
 parser.add_argument('-epoch-num',type=int,default=10,help='training epoch [default : 10]')
 parser.add_argument('-kernel-num',type=int,default =100,help='number of each kind of kernel')
 parser.add_argument('-kernel-sizes',type=str,default='3,4,5', help='comma-separated kernel size to use for convolution')
-parser.add_argument('-dropout',type=float,default=0.5, help='the probability for dropout [default : 0.5]')
+parser.add_argument('-dropout',type=float,default=0.1, help='the probability for BERT dropout [default : 0.1]')
+parser.add_argument('-att-dropout',type=float,default=0.1, help='the probability for BERT attention dropout [default : 0.1]')
 
 args = parser.parse_args()
 args.kernel_sizes = [int(k) for k in args.kernel_sizes.split(',')]
@@ -126,7 +127,8 @@ with open(DATA_DIR +"train_features.pkl","wb") as f:
 	pickle.dump(train_features,f)
 
 #model = BertForSequenceClassification.from_pretrained(BERT_MODEL, cache_dir = CACHE_DIR, num_labels = num_labels)
-modelBERT = BertModel.from_pretrained(BERT_MODEL, cache_dir = CACHE_DIR)
+configuration = BertConfig(hidden_dropout_prob= args.dropout, attention_probs_dropout_prob=args.att_dropout)
+modelBERT = BertModel(configuration).from_pretrained(BERT_MODEL, cache_dir = CACHE_DIR)
 modelBERT.to(device)
 
 param_optimizer = list(modelBERT.named_parameters())
@@ -196,6 +198,8 @@ for i in trange(int(args.epoch_num), desc="Epoch"):
 			global_step += 1
 	trainLoss = tr_loss/train_examples_len
 	flog.write(str(i)+"th epoch training loss\t"+str(trainLoss)+"\n")
+
+	# SAVE BERT MODEL
 	
 	model_to_save = modelBERT.module if hasattr(modelBERT, 'module') else modelBERT
 
@@ -209,3 +213,10 @@ for i in trange(int(args.epoch_num), desc="Epoch"):
 	torch.save(model_to_save.state_dict(), output_model_file)
 	model_to_save.config.to_json_file(output_config_file)
 	tokenizer.save_vocabulary(OUTPUT_DIR)
+
+	# SAVE OTHER MODELS
+	cnnModelFile = os.path.join(epochDir, 'cnnModel')
+	torch.save(cnnModel.state_dict(),cnnModelFile)
+
+	fcModelFile = os.path.join(epochDir,'fcModel')
+	torch.save(fcLayer.state_dict(),fcModelFile)

@@ -9,7 +9,8 @@ class CNN_Text(nn.Module):
 		super(CNN_Text,self).__init__()
 
 		D = args.embed_dim
-		C = args.class_num
+		#C = args.class_num
+		C = 2
 		Ci = 1
 		Co = args.kernel_num
 		Ks = args.kernel_sizes
@@ -18,7 +19,7 @@ class CNN_Text(nn.Module):
 
 		self.convs1 = nn.ModuleList([nn.Conv2d(Ci,Co,(K,D)) for K in Ks])
 
-		self.dropout = nn.Dropout(args.dropout)
+		self.dropout = nn.Dropout(args.cnn_dropout)
 		self.fc1 = nn.Linear(len(Ks)*Co,C)
 	
 	def forward(self,x):
