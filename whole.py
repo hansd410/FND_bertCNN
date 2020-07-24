@@ -66,7 +66,6 @@ parser.add_argument('-epoch-num',type=int,default=10,help='training epoch [defau
 parser.add_argument('-mode',type=str,default='train', help='train or test or dev mode [default : train]')
 parser.add_argument('-batch-size',type=int,default=30, help='batch size [default : 30]')
 parser.add_argument('-lr',type=float,default=2e-5, help='learning rate [default : 2e-5]')
-parser.add_argument('-train-epoch',type=int,default=300, help='maximum evidence length [default : 300]')
 # CNN
 parser.add_argument('-cnn',type=bool,default=True, help='cnn on off [default : True]')
 parser.add_argument('-cnn-max-len',type=int,default=300, help='maximum evidence length [default : 300]')
@@ -91,7 +90,7 @@ if not os.path.exists(args.reports_dir):
 	os.makedirs(args.reports_dir)
 
 if os.path.exists(args.reports_dir) :
-	args.reports_dir += 'report_{len(os.listdir('+args.reports_dir+'))}'
+	args.reports_dir += f'/report_{len(os.listdir(args.reports_dir))}'
 	if not os.path.exists(args.reports_dir):
 		os.makedirs(args.reports_dir)
 
@@ -234,7 +233,7 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 		if not os.path.exists(epochDir):
 			os.makedirs(epochDir)
 
-		flog = open(epochDir+'_log.txt','w')
+		flog = open(epochDir+'/parameters.txt','w')
 		for key in argsDict.keys():
 			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
 
@@ -259,6 +258,10 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 	# EVALUATION RESULT
 	if(args.mode == 'test' or args.mode =='dev'):
 		resultDir = args.reports_dir
+
+		flog = open(resultDir+'/parameters.txt','w')
+		for key in argsDict.keys():
+			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
 
 		# PRINT RESULT
 		preds = preds[0]
