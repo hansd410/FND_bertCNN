@@ -79,6 +79,7 @@ parser.add_argument('-bert-max-len',type=int,default=128, help='maximum statemen
 parser.add_argument('-bert-hidden-dropout',type=float,default=0.1, help='bert hidden dropout [default : 0.1]')
 parser.add_argument('-bert-att-dropout',type=float,default=0.1, help='bert attention dropout [default : 0.1]')
 parser.add_argument('-bert-model',type=str,default='bert-base-cased', help='bert model name [default : bert-base-cased]')
+parser.add_argument('-bert-tokenizer',type=str,default='bert-base-cased', help='bert tokenizer [default : bert-base-cased]')
 parser.add_argument('-weights-name',type=str,default='pytorch_model.bin', help='bert weights name [default : pytorch_model.bin]')
 parser.add_argument('-config-name',type=str,default='config.json', help='bert config name [default : config.json]')
 
@@ -152,7 +153,11 @@ label_list = processor.get_labels()
 num_labels = len(label_list)
 
 label_map = {label: i for i, label in enumerate(label_list)}
-tokenizer = BertTokenizer.from_pretrained(args.output_dir+'/vocab.txt',do_lower_case=False)
+if(args.mode == 'train'):
+	tokenizer = BertTokenizer.from_pretrained(args.bert_tokenizer,do_lower_case=False)
+else:
+	tokenizer = BertTokenizer.from_pretrained(args.output_dir+'/vocab.txt',do_lower_case=False)
+
 examples_for_processing = [(example, label_map, args.bert_max_len, tokenizer) for example in examples]
 
 process_count = cpu_count() - 1
