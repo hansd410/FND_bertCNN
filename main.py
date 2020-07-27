@@ -86,7 +86,7 @@ args = parser.parse_args()
 argsDict = vars(args)
 
 ################################ GENERAL ####################################
-device = torch.device("cuda"+str(args.cuda_num) if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:"+str(args.cuda_num) if torch.cuda.is_available() else "cpu")
 
 ################################ CNN PART ####################################
 
