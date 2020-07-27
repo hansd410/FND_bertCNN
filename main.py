@@ -62,6 +62,7 @@ parser.add_argument('-data-dir',type=str,default='data/train.tsv', help='data di
 parser.add_argument('-output-dir',type=str,default='outputs/fakeNews', help='output dir [default : outputs/fakeNews]')
 parser.add_argument('-reports-dir',type=str,default='reports/fakeNews_evaluation_report', help='reports dir [default : reports/fakeNews_evaluation_report]')
 parser.add_argument('-cache-dir',type=str,default='cache', help='cache dir [default : cache]')
+parser.add_argument('-cuda-num',type=int,default=0, help='cuda device num [default : 0]')
 parser.add_argument('-epoch-num',type=int,default=10,help='training epoch [default : 10]')
 parser.add_argument('-mode',type=str,default='train', help='train or test or dev mode [default : train]')
 parser.add_argument('-batch-size',type=int,default=30, help='batch size [default : 30]')
@@ -72,7 +73,7 @@ parser.add_argument('-cnn-max-len',type=int,default=300, help='maximum evidence 
 parser.add_argument('-embed-dim',type=int,default=300, help='embed dim for evidence [default : 300]')
 parser.add_argument('-kernel-num',type=int,default =100,help='number of each kind of kernel')
 parser.add_argument('-kernel-sizes',type=str,default='3,4,5', help='comma-separated kernel size to use for convolution')
-parser.add_argument('-cnn-dropout',type=float,default=0.5, help='the probability for dropout [default : 0.5]')
+parser.add_argument('-cnn-dropout',type=float,default=0.1, help='the probability for dropout [default : 0.1]')
 # BERT
 parser.add_argument('-bert-max-len',type=int,default=128, help='maximum statement length [default : 128]')
 parser.add_argument('-bert-hidden-dropout',type=float,default=0.1, help='bert hidden dropout [default : 0.1]')
@@ -85,16 +86,7 @@ args = parser.parse_args()
 argsDict = vars(args)
 
 ################################ GENERAL ####################################
-
-if not os.path.exists(args.reports_dir):
-	os.makedirs(args.reports_dir)
-
-if os.path.exists(args.reports_dir) :
-	args.reports_dir += f'/report_{len(os.listdir(args.reports_dir))}'
-	if not os.path.exists(args.reports_dir):
-		os.makedirs(args.reports_dir)
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda"+str(args.cuda_num) if torch.cuda.is_available() else "cpu")
 
 ################################ CNN PART ####################################
 
@@ -192,6 +184,17 @@ if(args.mode == 'test' or args.mode =='dev'):
 	args.epoch_num = 1
 	epochDesc = "Test"
 
+
+# TEST/DEV directory generation
+if(args.mode =='test' or args.mode =='dev'):
+	if not os.path.exists(args.reports_dir):
+		os.makedirs(args.reports_dir)
+
+	if os.path.exists(args.reports_dir) :
+		args.reports_dir += f'/report_{len(os.listdir(args.reports_dir))}'
+		if not os.path.exists(args.reports_dir):
+			os.makedirs(args.reports_dir)
+
 preds = []
 for i in trange(int(args.epoch_num), desc = epochDesc):
 	totalLoss = 0
@@ -229,11 +232,13 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 	totalLoss = totalLoss / nb_steps
 
 	if(args.mode =='train'):
+		optimizer.step()
+		optimizer.zero_grad()
 		epochDir = args.output_dir+"/"+str(i)+"epoch"
 		if not os.path.exists(epochDir):
 			os.makedirs(epochDir)
 
-		flog = open(epochDir+'/parameters.txt','w')
+		flog = open(args.output_dir+'/parameters.txt','w')
 		for key in argsDict.keys():
 			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
 
@@ -253,13 +258,9 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 		fcModelFile = os.path.join(epochDir,'fcModel')
 		torch.save(fcLayer.state_dict(),fcModelFile)
 
-		resultDir = epochDir
-
 	# EVALUATION RESULT
 	if(args.mode == 'test' or args.mode =='dev'):
-		resultDir = args.reports_dir
-
-		flog = open(resultDir+'/parameters.txt','w')
+		flog = open(args.reports_dir+'/parameters.txt','w')
 		for key in argsDict.keys():
 			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
 
@@ -268,7 +269,7 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 		preds = np.argmax(preds, axis = 1)
 		result = compute_metrics(args.task_name,all_label_ids.numpy(),preds)
 		result['totalLoss'] = totalLoss
-		output_file = os.path.join(resultDir, args.mode+"_results.txt")
+		output_file = os.path.join(args.reports_dir, args.mode+"_results.txt")
 		with open(output_file,'w') as writer:
 			logger.info("**** "+args.mode+" RESULTS ****")
 			for key in (result.keys()):
