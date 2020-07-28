@@ -58,7 +58,8 @@ def compute_metrics(task_name,labels,preds):
 parser = argparse.ArgumentParser(description='CNN text classifier')
 # GENERAL
 parser.add_argument('-task-name',type=str,default='fakeNews', help='task name [default : fakeNews]')
-parser.add_argument('-data-dir',type=str,default='data/train.tsv', help='data dir [default : data/train.tsv]')
+parser.add_argument('-bert-data-dir',type=str,default='data/train.tsv', help='bert data dir [default : data/train.tsv]')
+parser.add_argument('-cnn-data-dir',type=str,default='data/train.csv', help='cnn data dir [default : data/train.csv]')
 parser.add_argument('-output-dir',type=str,default='outputs/fakeNews', help='output dir [default : outputs/fakeNews]')
 parser.add_argument('-reports-dir',type=str,default='reports/fakeNews_evaluation_report', help='reports dir [default : reports/fakeNews_evaluation_report]')
 parser.add_argument('-cache-dir',type=str,default='cache', help='cache dir [default : cache]')
@@ -93,7 +94,7 @@ device = torch.device("cuda:"+str(args.cuda_num) if torch.cuda.is_available() el
 
 args.kernel_sizes = [int(k) for k in args.kernel_sizes.split(',')]
 
-dataReader = csvReader(args.data_dir)
+dataReader = csvReader(args.cnn_data_dir)
 
 contextList = dataReader.getContextList()
 wordEmbedding = Embedding(args.embed_dim)
@@ -146,7 +147,7 @@ fcLayer.to(device)
 # READ DATA
 processor = BinaryClassificationProcessor()
 
-examples = processor.get_data_examples(args.data_dir)
+examples = processor.get_data_examples(args.bert_data_dir)
 examples_len = len(examples)
 
 label_list = processor.get_labels()
@@ -274,7 +275,7 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 		preds = np.argmax(preds, axis = 1)
 		result = compute_metrics(args.task_name,all_label_ids.numpy(),preds)
 		result['totalLoss'] = totalLoss
-		output_file = os.path.join(args.reports_dir, args.mode+"_results.txt")
+		output_file = os.path.join(args.reports_dir, "eval_results.txt")
 		with open(output_file,'w') as writer:
 			logger.info("**** "+args.mode+" RESULTS ****")
 			for key in (result.keys()):

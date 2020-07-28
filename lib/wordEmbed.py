@@ -60,7 +60,7 @@ class Embedding	:
 					token = '<unk>'
 
 				if(len(senIdxList)==maxLen):
-					continue
+					break
 				else:
 					senIdxList.append(self.wordIdxDic[token])
 			while(len(senIdxList)<maxLen):
