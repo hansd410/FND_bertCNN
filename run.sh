@@ -1,3 +1,5 @@
+# standard run script
+
 python main.py -cnn False
 
 for i in $(seq 0 9)
@@ -8,14 +10,18 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
+rm -rf results/experimentV15
 mkdir results/experimentV15
+cp outputs/fakeNews/train_parameters.txt results/experimentsV15/
 mv reports/fakeNews_evaluation_report/* results/experimentV15/
 cd results
 python mergeResult.py experimentV15
 cd ../
+
+
 
 
 python main.py -cnn False -bert-hidden-dropout 0.3
@@ -28,7 +34,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV16
@@ -48,7 +54,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV17
@@ -68,7 +74,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV18
@@ -88,7 +94,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV19
@@ -108,7 +114,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV20
@@ -128,7 +134,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV21
@@ -148,7 +154,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV22
@@ -168,7 +174,7 @@ do
 	cp cnnModel ../../../cache
 	cp fcModel ../../../cache
 	cd ../../../
-	python main.py -mode test -bert-data-dir data/test.tsv -cnn False
+	python main.py -mode test -bert-data-dir data/test.tsv -cnn False -cnn-data-dir data/test.csv
 done
 
 mkdir results/experimentV23

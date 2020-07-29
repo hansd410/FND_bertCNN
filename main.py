@@ -69,7 +69,7 @@ parser.add_argument('-mode',type=str,default='train', help='train or test or dev
 parser.add_argument('-batch-size',type=int,default=30, help='batch size [default : 30]')
 parser.add_argument('-lr',type=float,default=2e-5, help='learning rate [default : 2e-5]')
 # CNN
-parser.add_argument('-cnn',type=bool,default=True, help='cnn on off [default : True]')
+parser.add_argument('-cnn',type=str,default="True", help='cnn on off [default : True]')
 parser.add_argument('-cnn-max-len',type=int,default=300, help='maximum evidence length [default : 300]')
 parser.add_argument('-embed-dim',type=int,default=300, help='embed dim for evidence [default : 300]')
 parser.add_argument('-kernel-num',type=int,default =100,help='number of each kind of kernel')
@@ -106,11 +106,17 @@ cnnModel = CNN_Text(args)
 cnnOutputDim = len(args.kernel_sizes)*args.kernel_num
 
 # bert hidden dim : 768, class label : 2
+print(args.cnn)
+if(args.cnn == 'False'):
+	args.cnn = False
+else:
+	args.cnn = True
 if(args.cnn):
+	print("cnn activated")
 	fcLayer = nn.Linear(cnnOutputDim+768,2)
 else:
+	print("cnn deactivated")
 	fcLayer = nn.Linear(768,2)
-
 ###################### BERT PART ########################
 # MODEL
 if(args.mode =='train'):
@@ -197,9 +203,18 @@ if(args.mode =='test' or args.mode =='dev'):
 		os.makedirs(args.reports_dir)
 
 	if os.path.exists(args.reports_dir) :
-		args.reports_dir += f'/report_{len(os.listdir(args.reports_dir))}'
-		if not os.path.exists(args.reports_dir):
-			os.makedirs(args.reports_dir)
+		report_dir += f'/report_{len(os.listdir(args.reports_dir))}'
+		if not os.path.exists(report_dir):
+			os.makedirs(report_dir)
+
+# parameter log
+if(args.mode == 'train'):
+	flogDir = args.output_dir+'/'+args.mode+'_parameters.txt'
+if(args.mode == 'test' or args.mode =='dev'):
+	flogDir = args.reports_dir+'/'+args.mode+'_parameters.txt'
+flog = open(flogDir,'w')
+for key in argsDict.keys():
+	flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
 
 preds = []
 for i in trange(int(args.epoch_num), desc = epochDesc):
@@ -244,10 +259,6 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 		if not os.path.exists(epochDir):
 			os.makedirs(epochDir)
 
-		flog = open(args.output_dir+'/parameters.txt','w')
-		for key in argsDict.keys():
-			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
-
 		model_to_save = modelBERT.module if hasattr(modelBERT, 'module') else modelBERT
 
 		output_model_file = os.path.join(epochDir, args.weights_name)
@@ -266,16 +277,12 @@ for i in trange(int(args.epoch_num), desc = epochDesc):
 
 	# EVALUATION RESULT
 	if(args.mode == 'test' or args.mode =='dev'):
-		flog = open(args.reports_dir+'/parameters.txt','w')
-		for key in argsDict.keys():
-			flog.write(str(key)+'\t'+str(argsDict[key])+'\n')
-
 		# PRINT RESULT
 		preds = preds[0]
 		preds = np.argmax(preds, axis = 1)
 		result = compute_metrics(args.task_name,all_label_ids.numpy(),preds)
 		result['totalLoss'] = totalLoss
-		output_file = os.path.join(args.reports_dir, "eval_results.txt")
+		output_file = os.path.join(report_dir, "eval_results.txt")
 		with open(output_file,'w') as writer:
 			logger.info("**** "+args.mode+" RESULTS ****")
 			for key in (result.keys()):
